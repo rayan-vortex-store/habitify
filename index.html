@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habitify AI - تطبيق الجوال الاحترافي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-body: #030706;
+            --bg-card: #08100e;
+            --bg-card-hover: #0e1a17;
+            --green-neon: #00ff88;
+            --green-dim: #00cc6a;
+            --green-glow: rgba(0, 255, 136, 0.25);
+            --text-main: #ffffff;
+            --text-sub: #8a9993;
+            --border-clr: #13221c;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* حاوية التطبيق بحجم وشكل شاشة الجوال تماماً ومملوءة بالكامل */
+        .app-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            max-height: 950px;
+            background: var(--bg-card);
+            border-radius: 0;
+            border: none;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        @media (min-width: 500px) {
+            .app-container {
+                border-radius: 36px;
+                border: 1px solid var(--border-clr);
+                height: 94vh;
+            }
+        }
+
+        /* شريط التمرير */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #050a09; }
+        ::-webkit-scrollbar-thumb { background: #13221c; border-radius: 10px; }
+
+        /* نافذة الدفع الإلزامي */
+        .paywall-modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 7, 6, 0.98);
+            backdrop-filter: blur(15px);
+            z-index: 250;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+            display: none;
+        }
+        .paywall-modal.active { display: flex; }
+
+        /* شاشة الترحيب والدخول المليئة بالكامل بدون فراغات */
+        .onboarding-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, #050a09 0%, #08100e 50%, #030706 100%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px 24px;
+            text-align: center;
+            transition: opacity 0.4s ease;
+            overflow-y: auto;
+        }
+        .onboarding-screen.hidden { opacity: 0; pointer-events: none; }
+
+        .onboarding-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .onboarding-logo-icon {
+            font-size: 38px;
+            background: rgba(0, 255, 136, 0.12);
+            width: 75px; height: 75px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 24px; border: 1px solid var(--green-neon);
+            box-shadow: 0 0 25px var(--green-glow);
+            margin-bottom: 12px;
+        }
+
+        .onboarding-title { font-size: 26px; font-weight: 900; color: var(--text-main); margin-bottom: 6px; }
+        .onboarding-title span { color: var(--green-neon); text-shadow: 0 0 12px var(--green-neon); }
+        .onboarding-sub { font-size: 12px; color: var(--text-sub); line-height: 1.6; max-width: 320px; }
+
+        .onboarding-card {
+            width: 100%;
+            background: rgba(14, 26, 23, 0.7);
+            border: 1px solid var(--border-clr);
+            border-radius: 24px;
+            padding: 20px 16px;
+            margin: 15px 0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .custom-input, .custom-select {
+            width: 100%; background: #040807; border: 1px solid var(--border-clr); color: #fff;
+            padding: 13px 16px; border-radius: 14px; font-size: 13px; outline: none; margin-bottom: 10px; text-align: center;
+            transition: 0.2s;
+        }
+        .custom-input:focus, .custom-select:focus { border-color: var(--green-neon); box-shadow: 0 0 12px var(--green-glow); }
+        .custom-select option { background: #08100e; color: #fff; }
+
+        /* أزرار طرق تسجيل الدخول الثلاثة */
+        .auth-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* زر جوجل بلون أنيق مميز */
+        .btn-google {
+            width: 100%; background: #1a2622; color: #ffffff;
+            border: 1px solid #2b423b; padding: 13px; border-radius: 14px; font-weight: 800; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
+        }
+        .btn-google:hover { background: #22342e; border-color: var(--green-neon); }
+
+        .btn-phone {
+            width: 100%; background: #0d1715; color: var(--green-neon);
+            border: 1px solid var(--border-clr); padding: 13px; border-radius: 14px; font-weight: 800; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+        }
+        .btn-phone:hover { background: #13221c; }
+
+        .btn-ghost {
+            width: 100%; background: transparent; color: var(--text-sub); border: 1px solid var(--border-clr);
+            padding: 12px; border-radius: 14px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-ghost:hover { color: #fff; border-color: #ef4444; }
+
+        .btn-main {
+            width: 100%; background: linear-gradient(135deg, var(--green-dim), var(--green-neon)); color: #000;
+            border: none; padding: 14px; border-radius: 14px; font-weight: 900; font-size: 14px; cursor: pointer;
+            box-shadow: 0 0 15px var(--green-glow); margin-top: 5px;
+        }
+
+        /* أزرار اختيار الجنس */
+        .gender-container { display: flex; gap: 8px; margin-bottom: 10px; }
+        .gender-btn {
+            flex: 1; background: #040807; border: 1px solid var(--border-clr); border-radius: 12px;
+            padding: 10px; color: var(--text-sub); font-size: 12px; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
+        }
+        .gender-btn.active { background: rgba(0, 255, 136, 0.12); border-color: var(--green-neon); color: var(--green-neon); box-shadow: 0 0 10px var(--green-glow); }
+
+        /* الهيدر العلوي */
+        .header {
+            padding: 16px 20px; background: rgba(8, 16, 14, 0.95); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-clr); display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        .logo { font-size: 19px; font-weight: 900; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
+        .logo span { color: var(--green-neon); text-shadow: 0 0 10px var(--green-neon); }
+        .pro-badge {
+            background: linear-gradient(135deg, var(--green-neon), var(--green-dim)); padding: 5px 12px;
+            border-radius: 20px; font-size: 11px; font-weight: 900; color: #000; cursor: pointer; box-shadow: 0 0 10px var(--green-glow);
+        }
+
+        /* الصفحات الداخلية */
+        .page { display: none; flex: 1; padding: 18px; overflow-y: auto; flex-direction: column; }
+        .page.active { display: flex; }
+
+        /* كارت الإنجاز */
+        .stats-card {
+            background: linear-gradient(145deg, #060d0b, #0b1714); border: 1px solid var(--border-clr);
+            border-radius: 20px; padding: 16px; margin-bottom: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .stats-title { font-size: 13px; color: var(--text-sub); font-weight: 600; }
+        .stats-val { font-size: 14px; color: var(--green-neon); font-weight: 900; }
+
+        .progress-bar-bg { background: #030706; height: 9px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-clr); }
+        .progress-bar-fill {
+            background: linear-gradient(90deg, var(--green-dim), var(--green-neon)); height: 100%; width: 0%;
+            border-radius: 10px; transition: width 0.4s ease; box-shadow: 0 0 10px var(--green-neon);
+        }
+
+        .section-title {
+            font-size: 14px; font-weight: 800; color: var(--text-main); margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .habit-list { display: flex; flex-direction: column; gap: 8px; }
+        .habit-item {
+            background: var(--bg-card-hover); border: 1px solid var(--border-clr); border-radius: 16px;
+            padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; transition: 0.2s;
+        }
+        .habit-item:hover { border-color: var(--green-neon); }
+        .habit-info { display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer; }
+        .habit-icon {
+            font-size: 17px; background: #040807; width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid var(--border-clr);
+        }
+        .habit-name { font-weight: 800; font-size: 13px; color: var(--text-main); }
+        .habit-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+        .check-btn {
+            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #1a2e27;
+            background: transparent; display: flex; align-items: center; justify-content: center; color: transparent; font-weight: 900; cursor: pointer;
+        }
+        .habit-item.completed { background: rgba(0, 255, 136, 0.05); border-color: var(--green-neon); }
+        .habit-item.completed .check-btn { background: var(--green-neon); border-color: var(--green-neon); color: #000; box-shadow: 0 0 8px var(--green-neon); }
+        .habit-item.completed .habit-name { text-decoration: line-through; color: var(--text-sub); }
+
+        .delete-btn {
+            background: transparent; border: none; color: #ef4444; font-size: 15px; cursor: pointer; padding: 4px; margin-left: 6px; opacity: 0.7; transition: 0.2s;
+        }
+        .delete-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        /* شاشة الذكاء الاصطناعي */
+        .chat-box {
+            flex: 1; background: #040807; border: 1px solid var(--border-clr); border-radius: 18px;
+            padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+        }
+        .msg { max-width: 85%; padding: 11px 15px; border-radius: 16px; font-size: 13px; line-height: 1.5; }
+        .msg.bot { background: #0c1613; border: 1px solid var(--border-clr); align-self: flex-start; color: #e2e8f0; border-bottom-right-radius: 4px; }
+        .msg.user { background: linear-gradient(135deg, var(--green-dim), var(--green-neon)); align-self: flex-end; color: #000; font-weight: 800; border-bottom-left-radius: 4px; box-shadow: 0 0 10px var(--green-glow); }
+
+        .chat-input-area { display: flex; gap: 8px; }
+        .chat-input {
+            flex: 1; background: #040807; border: 1px solid var(--border-clr); border-radius: 12px;
+            padding: 10px 14px; color: #fff; font-size: 13px; outline: none;
+        }
+        .chat-input:focus { border-color: var(--green-neon); box-shadow: 0 0 8px var(--green-glow); }
+        .send-btn {
+            background: var(--green-neon); color: #000; border: none; border-radius: 12px;
+            padding: 0 18px; font-weight: 900; cursor: pointer; box-shadow: 0 0 8px var(--green-glow);
+        }
+
+        /* الإحصائيات */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: var(--bg-card-hover); border: 1px solid var(--border-clr); padding: 14px; border-radius: 16px; text-align: center; }
+        .stat-num { font-size: 22px; font-weight: 900; color: var(--green-neon); margin-top: 4px; }
+        .stat-lbl { font-size: 11px; color: var(--text-sub); }
+
+        /* الإعدادات */
+        .setting-item {
+            background: var(--bg-card-hover); border: 1px solid var(--border-clr); padding: 13px;
+            border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px;
+        }
+
+        /* القائمة السفلية */
+        .nav-bar {
+            background: rgba(8, 16, 14, 0.98); border-top: 1px solid var(--border-clr);
+            display: flex; justify-content: space-around; padding: 10px 0;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-sub); font-size: 11px; font-weight: 700; cursor: pointer; gap: 3px; }
+        .nav-item.active { color: var(--green-neon); }
+        .nav-icon { font-size: 17px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- نافذة الدفع الإلزامي -->
+        <div class="paywall-modal" id="paywallModal">
+            <h2 id="paywallTitle" style="color: var(--green-neon); font-size: 22px; margin-bottom: 10px;">انتهت التجربة أو يلزم تسجيل الدخول ⚡</h2>
+            <p id="paywallDesc" style="color: var(--text-sub); font-size: 12px; margin-bottom: 22px;">حساب الشبح ينتهي بعد يوم واحد، أو انتهت فترة الـ 3 أيام التجريبية. اشترك الآن بـ 9.99€ شهرياً.</p>
+            <button class="btn-main" id="paywallBtn" onclick="subscribePro()">اشتراك Pro (9.99€)</button>
+        </div>
+
+        <!-- شاشة تسجيل الدخول المليئة بالكامل (مملوءة وأنيقة بدون فراغات) -->
+        <div class="onboarding-screen" id="onboardingScreen">
+            <div class="onboarding-top">
+                <div class="onboarding-logo-icon">⚡</div>
+                <div class="onboarding-title">Habitify <span>AI</span></div>
+                <div class="onboarding-sub" id="onboardingSubText">اختر طريقة تسجيل الدخول المفضلة لديك للانضمام إلى منصة التحديات والذكاء الاصطناعي الذكية.</div>
+            </div>
+            
+            <div class="onboarding-card">
+                <input type="text" id="setupName" class="custom-input" placeholder="أدخل اسمك الكريم...">
+                
+                <div class="gender-container">
+                    <button type="button" class="gender-btn active" id="genderMaleBtn" onclick="selectGender('male')">
+                        <span>👨‍🦱</span> <span id="txtMale">ذكر</span>
+                    </button>
+                    <button type="button" class="gender-btn" id="genderFemaleBtn" onclick="selectGender('female')">
+                        <span>👩‍🦰</span> <span id="txtFemale">أنثى</span>
+                    </button>
+                </div>
+
+                <select id="setupLang" class="custom-select" onchange="changeLanguage(this.value)">
+                    <option value="ar">🇸🇦 العربية (Arabic)</option>
+                    <option value="de">🇩🇪 Deutsch (German)</option>
+                    <option value="en">🇺🇸 English (US)</option>
+                    <option value="fr">🇫🇷 Français (French)</option>
+                </select>
+
+                <!-- الطرق الثلاث لتسجيل الدخول داخل الموقع بالكامل -->
+                <div class="auth-methods" style="margin-top: 10px;">
+                    <button type="button" class="btn-google" onclick="authWithGoogle()">
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.95H1.2v3.15C3.21 21.32 7.29 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.25c-.25-.72-.38-1.49-.38-2.25s.13-1.53.38-2.25V6.6H1.2C.44 8.13 0 9.87 0 12s.44 3.87 1.2 5.4l4.08-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.29 0 3.21 2.68 1.2 6.6l4.08 3.15c.95-2.84 3.6-4.95 6.72-4.95z"/></svg>
+                        <span id="googleBtnText">تسجيل عبر Google</span>
+                    </button>
+
+                    <button type="button" class="btn-phone" onclick="authWithPhoneModal()">
+                        <span>📱</span> <span id="phoneBtnText">تسجيل برقم الجوال ورمز التحقق</span>
+                    </button>
+
+                    <button type="button" class="btn-ghost" onclick="authAsGhost()">
+                        <span>👻</span> <span id="ghostBtnText">دخول سريع كشبح (يوم واحد وبدون AI)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div style="font-size: 10px; color: var(--text-sub); margin-bottom: 5px;">Habitify AI System v3.5 • Mobile Ready</div>
+        </div>
+
+        <!-- الهيدر العلوي -->
+        <div class="header">
+            <div class="logo">Habitify <span>AI</span></div>
+            <div class="pro-badge" id="headerStatusBadge" onclick="alert('حسابك نشط ومحفوظ داخل التطبيق!')">Pro Active</div>
+        </div>
+
+        <!-- 1. شاشة اليوم الشاملة -->
+        <div class="page active" id="page-today">
+            <div class="stats-card">
+                <div class="stats-header">
+                    <span class="stats-title" id="welcomeUserText">مرحباً بك، شريك النجاح</span>
+                    <span class="stats-val" id="progressVal">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-sub); margin-top: 6px;" id="statsText">انقر على المهام لإنجازها 🚀</div>
+            </div>
+
+            <div class="section-title">
+                <span id="txtTodayTasks">مهام اليوم الشاملة</span>
+                <span id="txtAddHabit" style="font-size: 12px; color: var(--green-neon); cursor: pointer;" onclick="addCustomHabit()">+ إضافة مهمة</span>
+            </div>
+
+            <div class="habit-list" id="habitList">
+                <div class="habit-item">
+                    <div class="habit-info" onclick="toggleHabit(this)">
+                        <div class="habit-icon">📖</div>
+                        <div>
+                            <div class="habit-name" id="task1Name">دراسة وتلخيص المنهج (20 دقيقة)</div>
+                            <div class="habit-sub" id="task1Sub">التطوير الذاتي • اليوم 5/21</div>
+                        </div>
+                    </div>
+                    <button class="check-btn" onclick="toggleHabit(this.previousElementSibling)">✓</button>
+                    <button class="delete-btn" onclick="deleteHabit(this)" title="حذف المهمة">🗑️</button>
+                </div>
+
+                <div class="habit-item">
+                    <div class="habit-info" onclick="toggleHabit(this)">
+                        <div class="habit-icon">💼</div>
+                        <div>
+                            <div class="habit-name" id="task2Name">مراجعة ساعات العمل / Minijob</div>
+                            <div class="habit-sub" id="task2Sub">العمل والإنتاجية • اليوم 12/21</div>
+                        </div>
+                    </div>
+                    <button class="check-btn" onclick="toggleHabit(this.previousElementSibling)">✓</button>
+                    <button class="delete-btn" onclick="deleteHabit(this)" title="حذف المهمة">🗑️</button>
+                </div>
+
+                <div class="habit-item">
+                    <div class="habit-info" onclick="toggleHabit(this)">
+                        <div class="habit-icon">💧</div>
+                        <div>
+                            <div class="habit-name" id="task3Name">شرب 2 لتر ماء وصحة بدنية</div>
+                            <div class="habit-sub" id="task3Sub">الصحة العامة • يومياً</div>
+                        </div>
+                    </div>
+                    <button class="check-btn" onclick="toggleHabit(this.previousElementSibling)">✓</button>
+                    <button class="delete-btn" onclick="deleteHabit(this)" title="حذف المهمة">🗑️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. شاشة الإحصائيات -->
+        <div class="page" id="page-stats">
+            <div class="section-title" id="statTitleMain">إحصائيات الأداء الحقيقية</div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-lbl" id="statLbl1">أيام الالتزام (Streak)</div>
+                    <div class="stat-num" id="streakNum">7 🔥</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-lbl" id="statLbl2">إجمالي المهام المنجزة</div>
+                    <div class="stat-num" id="totalCompleted">14</div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-title" id="statCardTitle" style="margin-bottom:6px;">كفاءة الأداء الأسبوعي</div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 88%; background: var(--green-neon);"></div></div>
+                <div id="statCardDesc" style="font-size:11px; color:var(--green-neon); margin-top:6px;">أنت تؤدي بشكل رائع جداً هذا الأسبوع! 🌟</div>
+            </div>
+        </div>
+
+        <!-- 3. شاشة الذكاء الاصطناعي (مع تقييد الشبح) -->
+        <div class="page" id="page-ai">
+            <div class="section-title" id="aiTitleMain">المساعد الذكي الخارق (خاص بك وحدك) 🤖</div>
+            <div class="chat-box" id="chatBox">
+                <div class="msg bot" id="aiWelcomeMsg">أهلاً بك! أنا مساعدك الذكي الخاص. محادثاتك هنا سرية ومحفوظة لحسابك. اسألني بأي لغة وسأرد عليك!</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="اسأل المساعد الذكي عن أي شيء..." onkeypress="if(event.key==='Enter') sendAiMessage()">
+                <button class="send-btn" id="sendBtn" onclick="sendAiMessage()">إرسال</button>
+            </div>
+        </div>
+
+        <!-- 4. شاشة الإعدادات -->
+        <div class="page" id="page-settings">
+            <div class="section-title" id="settingsTitleMain">الإعدادات والتفضيلات</div>
+            <div class="setting-item">
+                <span id="setLangLabel">تغيير لغة التطبيق</span>
+                <select id="settingsLangSelect" class="custom-select" style="width: 130px; margin: 0; padding: 6px;" onchange="changeLanguage(this.value)">
+                    <option value="ar">العربية</option>
+                    <option value="de">Deutsch</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <span id="setSubLabel">حالة الاشتراك والحساب</span>
+                <span style="color:var(--green-neon); font-weight:900;" id="subStatusText">محفوظ (Pro Active)</span>
+            </div>
+            <div class="setting-item">
+                <span id="setMemoryLabel">نوع الحساب</span>
+                <span style="color:var(--green-neon); font-size:11px; font-weight:bold;" id="savedAccountTypeDisplay">نشط ✓</span>
+            </div>
+            <button id="resetBtn" style="width:100%; margin-top:15px; padding:12px; background:#ef4444; border:none; border-radius:12px; color:#fff; font-weight:800; cursor:pointer; font-size:13px;" onclick="resetApp()">تسجيل خروج / تغيير الحساب</button>
+        </div>
+
+        <!-- القائمة السفلية -->
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchPage('today', this)">
+                <span class="nav-icon">📅</span>
+                <span id="navToday">اليوم</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('stats', this)">
+                <span class="nav-icon">📊</span>
+                <span id="navStats">الإحصائيات</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('ai', this)">
+                <span class="nav-icon">🤖</span>
+                <span id="navAi">مساعد AI</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('settings', this)">
+                <span class="nav-icon">⚙️</span>
+                <span id="navSettings">الإعدادات</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            ar: {
+                welcome: "مرحباً بك", welcomeFemale: "مرحباً بكِ", todayTasks: "مهام اليوم الشاملة", addHabit: "+ إضافة مهمة",
+                t1Name: "دراسة وتلخيص المنهج (20 دقيقة)", t1Sub: "التطوير الذاتي • اليوم 5/21",
+                t2Name: "مراجعة ساعات العمل / Minijob", t2Sub: "العمل والإنتاجية • اليوم 12/21",
+                t3Name: "شرب 2 لتر ماء وصحة بدنية", t3Sub: "الصحة العامة • يومياً",
+                statTitle: "إحصائيات الأداء الحقيقية", s1: "أيام الالتزام (Streak)", s2: "إجمالي المهام المنجزة",
+                sCardTitle: "كفاءة الأداء الأسبوعي", sCardDesc: "أنت تؤدي بشكل رائع جداً هذا الأسبوع! 🌟",
+                aiTitle: "المساعد الذكي الخارق (خاص بك وحدك) 🤖",
+                aiWelcome: "أهلاً بك! أنا مساعدك الذكي الخاص. محادثاتك هنا سرية ومحفوظة لحسابك. اسألني بأي لغة وسأرد عليك!",
+                aiPlaceholder: "اسأل المساعد الذكي عن أي شيء...", send: "إرسال",
+                setMain: "الإعدادات والتفضيلات", setLang: "تغيير لغة التطبيق", setSub: "حالة الاشتراك والحساب", setMem: "نوع الحساب", reset: "تسجيل خروج / تغيير الحساب",
+                nav1: "اليوم", nav2: "الإحصائيات", nav3: "مساعد AI", nav4: "الإعدادات",
+                paywallH: "انتهت التجربة أو صلاحية الشبح ⚡", paywallD: "حساب الشبح ينتهي خلال 24 ساعة، أو انتهت فترة الـ 3 أيام التجريبية. اشترك الآن بـ 9.99€ شهرياً.", paywallB: "اشتراك Pro (9.99€)",
+                onbSub: "اختر طريقة تسجيل الدخول المفضلة لديك للانضمام إلى منصة التحديات والذكاء الاصطناعي الذكية.",
+                googleBtnText: "تسجيل عبر Google", phoneBtnText: "تسجيل برقم الجوال ورمز التحقق", ghostBtnText: "دخول سريع كشبح (يوم واحد وبدون AI)",
+                streakDaysText: "أيام 🔥", namePlaceholder: "أدخل اسمك الكريم...",
+                maleText: "ذكر", femaleText: "أنثى"
+            },
+            de: {
+                welcome: "Willkommen", welcomeFemale: "Willkommen", todayTasks: "Heutige Aufgaben", addHabit: "+ Aufgabe hinzufügen",
+                t1Name: "20 Minuten lernen & zusammenfassen", t1Sub: "Persönliche Entwicklung • Tag 5/21",
+                t2Name: "Arbeitsstunden prüfen / Minijob", t2Sub: "Arbeit & Produktivität • Tag 12/21",
+                t3Name: "2 Liter Wasser trinken & Gesundheit", t3Sub: "Gesundheit • Täglich",
+                statTitle: "Echte Leistungsstatistik", s1: "Streak-Tage", s2: "Erledigte Aufgaben",
+                sCardTitle: "Wöchentliche Effizienz", sCardDesc: "Du machst diese Woche einen tollen Job! 🌟",
+                aiTitle: "Super KI-Assistent (Dein privater Chat) 🤖",
+                aiWelcome: "Willkommen! Deine Chats hier sind absolut privat.",
+                aiPlaceholder: "Frag den KI-Assistenten alles...", send: "Senden",
+                setMain: "Einstellungen & Präferenzen", setLang: "App-Sprache ändern", setSub: "Abo-Status", setMem: "Kontotyp", reset: "Abmelden / Konto wechseln",
+                nav1: "Heute", nav2: "Statistik", nav3: "KI Chat", nav4: "Einstellungen",
+                paywallH: "Testphase oder Gast-Zeit abgelaufen ⚡", paywallD: "Abonniere für 9.99€/Monat, um fortzufahren.", paywallB: "Pro abonnieren (9.99€)",
+                onbSub: "Wähle deine bevorzugte Anmeldemethode.",
+                googleBtnText: "Mit Google anmelden", phoneBtnText: "Mit Handynummer & Code anmelden", ghostBtnText: "Als Gast fortfahren (1 Tag, ohne KI)",
+                streakDaysText: "Tage 🔥", namePlaceholder: "Gib deinen Namen ein...",
+                maleText: "Männlich", femaleText: "Weiblich"
+            },
+            en: {
+                welcome: "Welcome", welcomeFemale: "Welcome", todayTasks: "Today's Comprehensive Tasks", addHabit: "+ Add Task",
+                t1Name: "Study & summarize for 20 mins", t1Sub: "Self Development • Day 5/21",
+                t2Name: "Review work hours / Minijob", t2Sub: "Work & Productivity • Day 12/21",
+                t3Name: "Drink 2L water & fitness", t3Sub: "General Health • Daily",
+                statTitle: "Real Performance Stats", s1: "Streak Days", s2: "Completed Tasks",
+                sCardTitle: "Weekly Efficiency", sCardDesc: "You are doing amazing this week! 🌟",
+                aiTitle: "Super AI Assistant (Private & Secure) 🤖",
+                aiWelcome: "Welcome! Your chats here are strictly private.",
+                aiPlaceholder: "Ask AI anything...", send: "Send",
+                setMain: "Settings & Preferences", setLang: "Change App Language", setSub: "Subscription & Account", setMem: "Account Type", reset: "Log out / Switch Account",
+                nav1: "Today", nav2: "Stats", nav3: "AI Chat", nav4: "Settings",
+                paywallH: "Trial or Ghost Access Ended ⚡", paywallD: "Subscription of 9.99€/month is required to continue.", paywallB: "Subscribe Pro (9.99€)",
+                onbSub: "Choose your preferred sign-in method.",
+                googleBtnText: "Sign in with Google", phoneBtnText: "Sign in with Phone & Verification Code", ghostBtnText: "Ghost Access (1 Day, No AI)",
+                streakDaysText: "Days 🔥", namePlaceholder: "Enter your name...",
+                maleText: "Male", femaleText: "Female"
+            },
+            fr: {
+                welcome: "Bienvenue", welcomeFemale: "Bienvenue", todayTasks: "Tâches du jour", addHabit: "+ Ajouter une tâche",
+                t1Name: "Étudier & résumer 20 min", t1Sub: "Développement • Jour 5/21",
+                t2Name: "Vérifier les heures / Minijob", t2Sub: "Productivité • Jour 12/21",
+                t3Name: "Boire 2L d'eau & santé", t3Sub: "Santé • Quotidien",
+                statTitle: "Statistiques de performance", s1: "Jours de série", s2: "Tâches terminées",
+                sCardTitle: "Efficacité hebdomadaire", sCardDesc: "Tu assures cette semaine ! 🌟",
+                aiTitle: "Super Assistant IA (Privé) 🤖",
+                aiWelcome: "Bienvenue ! Vos discussions ici sont privées.",
+                aiPlaceholder: "Demande n'importe quoi à l'IA...", send: "Envoyer",
+                setMain: "Paramètres", setLang: "Changer la langue", setSub: "Statut & Compte", setMem: "Type de compte", reset: "Déconnexion",
+                nav1: "Aujourd'hui", nav2: "Stats", nav3: "IA Chat", nav4: "Einstellungen",
+                paywallH: "Essai ou Accès Invité terminé ⚡", paywallD: "Abonnement de 9.99€/mois requis.", paywallB: "S'abonner Pro",
+                onbSub: "Choisissez votre méthode de connexion.",
+                googleBtnText: "Connexion avec Google", phoneBtnText: "Connexion par téléphone & code", ghostBtnText: "Mode Fantôme (1 jour, sans IA)",
+                streakDaysText: "Jours 🔥", namePlaceholder: "Entrez votre nom...",
+                maleText: "Homme", femaleText: "Femme"
+            }
+        };
+
+        let selectedGender = 'male';
+
+        function selectGender(gender) {
+            selectedGender = gender;
+            document.getElementById('genderMaleBtn').classList.toggle('active', gender === 'male');
+            document.getElementById('genderFemaleBtn').classList.toggle('active', gender === 'female');
+            localStorage.setItem('habitify_gender', gender);
+        }
+
+        let userId = localStorage.getItem('habitify_user_id');
+        let accountType = localStorage.getItem('habitify_account_type');
+
+        window.onload = function() {
+            checkAccountAndTrial();
+            const savedName = localStorage.getItem('habitify_user_name');
+            const savedLang = localStorage.getItem('habitify_lang') || 'ar';
+            const savedGender = localStorage.getItem('habitify_gender') || 'male';
+            
+            selectGender(savedGender);
+            document.getElementById('setupLang').value = savedLang;
+            document.getElementById('settingsLangSelect').value = savedLang;
+            setAppLanguage(savedLang);
+
+            if (savedName && accountType) {
+                document.getElementById('onboardingScreen').classList.add('hidden');
+                const t = translations[savedLang] || translations['ar'];
+                let genderPrefix = (savedGender === 'female' && savedLang === 'ar') ? t.welcomeFemale : t.welcome;
+                document.getElementById('welcomeUserText').innerText = `${genderPrefix}، ${savedName}`;
+                document.getElementById('savedAccountTypeDisplay').innerText = accountType.toUpperCase();
+            }
+            loadChatHistory();
+            updateProgress();
+        };
+
+        function checkAccountAndTrial() {
+            let trialStart = localStorage.getItem('habitify_trial_start');
+            let isSubscribed = localStorage.getItem('habitify_subscribed');
+
+            if (!accountType) return;
+
+            if (isSubscribed === 'true') {
+                document.getElementById('headerStatusBadge').innerText = "Pro (Active)";
+                document.getElementById('subStatusText').innerText = "محفوظ ومفعل (Pro)";
+                return;
+            }
+
+            if (!trialStart) {
+                trialStart = new Date().getTime();
+                localStorage.setItem('habitify_trial_start', trialStart);
+            } else {
+                let now = new Date().getTime();
+                let daysPassed = (now - trialStart) / (1000 * 60 * 60 * 24);
+                
+                // إذا كان شبح (Ghost)، تنتهي صلاحيته بعد يوم واحد فقط (1 يوم)
+                if (accountType === 'ghost' && daysPassed > 1) {
+                    document.getElementById('paywallModal').classList.add('active');
+                } else if (accountType !== 'ghost' && daysPassed > 3) {
+                    document.getElementById('paywallModal').classList.add('active');
+                }
+            }
+        }
+
+        function subscribePro() {
+            localStorage.setItem('habitify_subscribed', 'true');
+            document.getElementById('paywallModal').classList.remove('active');
+            document.getElementById('headerStatusBadge').innerText = "Pro (Active)";
+            document.getElementById('subStatusText').innerText = "محفوظ ومفعل (Pro)";
+            alert("تم الاشتراك بنجاح في باقة Pro!");
+        }
+
+        // 1. تسجيل عبر Google داخل الموقع مباشرة
+        function authWithGoogle() {
+            const name = document.getElementById('setupName').value.trim() || "Google User";
+            const lang = document.getElementById('setupLang').value;
+            
+            userId = 'google_' + Date.now();
+            saveAndEnter(userId, 'Google Account', name, lang);
+        }
+
+        // 2. تسجيل برقم الجوال ورمز التحقق داخل الموقع مباشرة
+        function authWithPhoneModal() {
+            const phone = prompt("أدخل رقم جوالك مع رمز الدولة (مثال: +491512345678):");
+            if (!phone || phone.length < 6) return;
+
+            // توليد كود تحقق وهمي تفاعلي داخل الموقع
+            const generatedCode = Math.floor(1000 + Math.random() * 9000);
+            alert(`[محاكاة خادم الجوال]\nتم إرسال رمز التحقق إلى الرقم ${phone}\nرمز التحقق الخاص بك هو: ${generatedCode}`);
+
+            const enteredCode = prompt(`أدخل رمز التحقق المكون من 4 أرقام الذي وصلك:`);
+            if (enteredCode == generatedCode) {
+                const name = document.getElementById('setupName').value.trim() || "Phone User";
+                const lang = document.getElementById('setupLang').value;
+                
+                userId = 'phone_' + phone.replace(/[^0-9]/g, '');
+                saveAndEnter(userId, 'Phone: ' + phone, name, lang);
+            } else {
+                alert("رمز التحقق غير صحيح! حاول مجدداً.");
+            }
+        }
+
+        // 3. دخول الشبح (ينتهي بعد يوم ولا يمكنه استخدام AI)
+        function authAsGhost() {
+            const name = document.getElementById('setupName').value.trim() || "Ghost User 👻";
+            const lang = document.getElementById('setupLang').value;
+            
+            userId = 'ghost_' + Date.now();
+            saveAndEnter(userId, 'Ghost (1 Day)', name, lang);
+        }
+
+        function saveAndEnter(uId, accType, name, lang) {
+            localStorage.setItem('habitify_user_id', uId);
+            localStorage.setItem('habitify_saved_account', uId);
+            localStorage.setItem('habitify_account_type', accType);
+            localStorage.setItem('habitify_user_name', name);
+            localStorage.setItem('habitify_lang', lang);
+            localStorage.setItem('habitify_gender', selectedGender);
+            localStorage.setItem('habitify_trial_start', new Date().getTime());
+            
+            setAppLanguage(lang);
+            const t = translations[lang] || translations['ar'];
+            let genderPrefix = (selectedGender === 'female' && lang === 'ar') ? t.welcomeFemale : t.welcome;
+            document.getElementById('welcomeUserText').innerText = `${genderPrefix}، ${name}`;
+            document.getElementById('savedAccountTypeDisplay').innerText = accType.toUpperCase();
+            document.getElementById('onboardingScreen').classList.add('hidden');
+        }
+
+        function changeLanguage(lang) {
+            localStorage.setItem('habitify_lang', lang);
+            document.getElementById('setupLang').value = lang;
+            document.getElementById('settingsLangSelect').value = lang;
+            setAppLanguage(lang);
+            const savedName = localStorage.getItem('habitify_user_name') || 'User';
+            const t = translations[lang] || translations['ar'];
+            let gender = localStorage.getItem('habitify_gender');
+            let genderPrefix = (gender === 'female' && lang === 'ar') ? t.welcomeFemale : t.welcome;
+            document.getElementById('welcomeUserText').innerText = `${genderPrefix}، ${savedName}`;
+        }
+
+        function setAppLanguage(lang) {
+            const t = translations[lang] || translations['en']; 
+            document.getElementById('htmlRoot').setAttribute('dir', (lang === 'ar') ? 'rtl' : 'ltr');
+            
+            document.getElementById('onboardingSubText').innerText = t.onbSub;
+            document.getElementById('googleBtnText').innerText = t.googleBtnText;
+            document.getElementById('phoneBtnText').innerText = t.phoneBtnText;
+            document.getElementById('ghostBtnText').innerText = t.ghostBtnText;
+            document.getElementById('setupName').placeholder = t.namePlaceholder;
+            document.getElementById('txtMale').innerText = t.maleText;
+            document.getElementById('txtFemale').innerText = t.femaleText;
+
+            document.getElementById('txtTodayTasks').innerText = t.todayTasks;
+            document.getElementById('txtAddHabit').innerText = t.addHabit;
+            document.getElementById('task1Name').innerText = t.t1Name;
+            document.getElementById('task1Sub').innerText = t.t1Sub;
+            document.getElementById('task2Name').innerText = t.t2Name;
+            document.getElementById('task2Sub').innerText = t.t2Sub;
+            document.getElementById('task3Name').innerText = t.t3Name;
+            document.getElementById('task3Sub').innerText = t.t3Sub;
+
+            document.getElementById('statTitleMain').innerText = t.statTitle;
+            document.getElementById('statLbl1').innerText = t.s1;
+            document.getElementById('statLbl2').innerText = t.s2;
+            document.getElementById('statCardTitle').innerText = t.sCardTitle;
+            document.getElementById('statCardDesc').innerText = t.sCardDesc;
+
+            document.getElementById('streakNum').innerText = `7 ${t.streakDaysText}`;
+
+            document.getElementById('aiTitleMain').innerText = t.aiTitle;
+            document.getElementById('aiWelcomeMsg').innerText = t.aiWelcome;
+            document.getElementById('chatInput').placeholder = t.aiPlaceholder;
+            document.getElementById('sendBtn').innerText = t.send;
+
+            document.getElementById('settingsTitleMain').innerText = t.setMain;
+            document.getElementById('setLangLabel').innerText = t.setLang;
+            document.getElementById('setSubLabel').innerText = t.setSub;
+            document.getElementById('setMemoryLabel').innerText = t.setMem;
+            document.getElementById('resetBtn').innerText = t.reset;
+
+            document.getElementById('navToday').innerText = t.nav1;
+            document.getElementById('navStats').innerText = t.nav2;
+            document.getElementById('navAi').innerText = t.nav3;
+            document.getElementById('navSettings').innerText = t.nav4;
+
+            document.getElementById('paywallTitle').innerText = t.paywallH;
+            document.getElementById('paywallDesc').innerText = t.paywallD;
+            document.getElementById('paywallBtn').innerText = t.paywallB;
+        }
+
+        function switchPage(pageId, navEl) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            navEl.classList.add('active');
+        }
+
+        function toggleHabit(element) {
+            const item = element.closest('.habit-item');
+            item.classList.toggle('completed');
+            updateProgress();
+        }
+
+        function deleteHabit(btn) {
+            const item = btn.closest('.habit-item');
+            item.style.transform = 'scale(0.8)';
+            item.style.opacity = '0';
+            setTimeout(() => {
+                item.remove();
+                updateProgress();
+            }, 250);
+        }
+
+        function updateProgress() {
+            const total = document.querySelectorAll('.habit-item').length;
+            const completed = document.querySelectorAll('.habit-item.completed').length;
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressVal').innerText = percentage + '%';
+            
+            const currentLang = localStorage.getItem('habitify_lang') || 'ar';
+            if(currentLang === 'de') {
+                document.getElementById('statsText').innerText = `${completed} von ${total} Aufgaben heute erledigt 🚀`;
+            } else if(currentLang === 'en') {
+                document.getElementById('statsText').innerText = `Completed ${completed} of ${total} tasks today 🚀`;
+            } else if(currentLang === 'fr') {
+                document.getElementById('statsText').innerText = `${completed} sur ${total} tâches terminées aujourd'hui 🚀`;
+            } else {
+                document.getElementById('statsText').innerText = `تم إنجاز ${completed} من أصل ${total} مهام اليوم 🚀`;
+            }
+            document.getElementById('totalCompleted').innerText = 14 + completed;
+        }
+
+        function addCustomHabit() {
+            const currentLang = localStorage.getItem('habitify_lang') || 'ar';
+            let promptText = currentLang === 'de' ? "Gib den Namen der neuen Aufgabe ein:" : (currentLang === 'en' ? "Enter new task name:" : (currentLang === 'fr' ? "Entrez le nom de la tâche:" : "أدخل اسم المهمة أو التحدي الجديد:"));
+            const name = prompt(promptText);
+            if (name && name.trim() !== "") {
+                const habitList = document.getElementById('habitList');
+                const newItem = document.createElement('div');
+                newItem.className = 'habit-item';
+                newItem.innerHTML = `
+                    <div class="habit-info" onclick="toggleHabit(this)">
+                        <div class="habit-icon">⭐</div>
+                        <div>
+                            <div class="habit-name">${name}</div>
+                            <div class="habit-sub">Custom • Day 1/21</div>
+                        </div>
+                    </div>
+                    <button class="check-btn" onclick="toggleHabit(this.previousElementSibling)">✓</button>
+                    <button class="delete-btn" onclick="deleteHabit(this)" title="حذف المهمة">🗑️</button>
+                `;
+                habitList.appendChild(newItem);
+                updateProgress();
+            }
+        }
+
+        let chatStorageKey = 'habitify_chat_' + (userId || 'default');
+        let chatHistory = JSON.parse(localStorage.getItem(chatStorageKey)) || [];
+
+        function sendAiMessage() {
+            // 🛡️ حظر حساب الشبح من استخدام المساعد الذكي
+            let currentAcc = localStorage.getItem('habitify_account_type');
+            if (currentAcc && currentAcc.includes('Ghost')) {
+                alert("عذراً، حساب الشبح غير مسموح له باستخدام المساعد الذكي (AI). يجدر بك الترقية أو تسجيل الدخول عبر Google أو الجوال!");
+                return;
+            }
+
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            chatHistory.push({ sender: 'user', text: text });
+            input.value = '';
+
+            setTimeout(() => {
+                let reply = `سؤالك أو فكرتك حول ("${input}") رائعة وتم حفظها بذاكرتك الشخصية والسرية وحدك!`;
+                appendMessage(reply, 'bot');
+                chatHistory.push({ sender: 'bot', text: reply });
+                localStorage.setItem(chatStorageKey, JSON.stringify(chatHistory));
+            }, 500);
+        }
+
+        function appendMessage(text, sender) {
+            const chatBox = document.getElementById('chatBox');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg ${sender}`;
+            msgDiv.innerText = text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function loadChatHistory() {
+            if (chatHistory.length > 0) {
+                chatHistory.forEach(m => appendMessage(m.text, m.sender));
+            }
+        }
+
+        function resetApp() {
+            if (confirm("هل تريد تسجيل الخروج ومسح بيانات الحساب الحالي؟")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
